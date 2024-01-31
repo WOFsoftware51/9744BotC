@@ -4,12 +4,17 @@
 
 package frc.robot;
 
+import com.revrobotics.CANSparkLowLevel;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+
 import edu.wpi.first.util.sendable.SendableRegistry;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -18,18 +23,18 @@ import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
  * directory.
  */
 public class Robot extends TimedRobot {
-  private final PWMSparkMax m_leftDrive = new PWMSparkMax(1);
-  private final PWMSparkMax m_rightDrive = new PWMSparkMax(2);
-  private final PWMSparkMax m_leftDrive2 = new PWMSparkMax(3);
-  private final PWMSparkMax m_rightDrive2 = new PWMSparkMax(4);
-  private final DifferentialDrive m_robotDrive =
-      new DifferentialDrive(m_leftDrive::set, m_rightDrive::set);
+  
   private final XboxController m_controller = new XboxController(0);
   private final Timer m_timer = new Timer();
+  private CANSparkMax m_leftMotor;
+  private CANSparkMax m_rightMotor;
+  private CANSparkMax m_leftMotor2;
+  private CANSparkMax m_rightMotor2;
+  private DifferentialDrive m_myRobot;
+
 
   public Robot() {
-    SendableRegistry.addChild(m_robotDrive, m_leftDrive);
-    SendableRegistry.addChild(m_robotDrive, m_rightDrive);
+
   }
 
   /**
@@ -41,10 +46,27 @@ public class Robot extends TimedRobot {
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
-    m_leftDrive.addFollower(m_leftDrive2);
-    m_rightDrive.addFollower(m_rightDrive2);
-    m_rightDrive.setInverted(true);
-    m_leftDrive2.setInverted(true);
+    m_leftMotor = new CANSparkMax(1, MotorType.kBrushed);
+    m_rightMotor = new CANSparkMax(3, MotorType.kBrushed);
+    m_leftMotor2 = new CANSparkMax(2, MotorType.kBrushed);
+    m_rightMotor2 = new CANSparkMax(4, MotorType.kBrushed);
+
+
+    m_leftMotor.restoreFactoryDefaults();
+    m_rightMotor.restoreFactoryDefaults();
+    m_leftMotor2.restoreFactoryDefaults();
+    m_rightMotor2.restoreFactoryDefaults();
+
+
+   // m_rightMotor.setInverted(true);
+    m_leftMotor.setInverted(true);
+    m_leftMotor2.follow(m_leftMotor);
+    m_rightMotor2.follow(m_rightMotor);
+
+    
+    m_myRobot = new DifferentialDrive(m_leftMotor, m_rightMotor);
+
+
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
@@ -59,9 +81,9 @@ public class Robot extends TimedRobot {
     // Drive for 2 seconds
     if (m_timer.get() < 2.0) {
       // Drive forwards half speed, make sure to turn input squaring off
-      m_robotDrive.arcadeDrive(0.5, 0.0, false);
+      m_myRobot.arcadeDrive(0.5, 0.0, false);
     } else {
-      m_robotDrive.stopMotor(); // stop robot
+      m_myRobot.stopMotor(); // stop robot
     }
   }
 
@@ -72,7 +94,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    m_robotDrive.curvatureDrive(-m_controller.getLeftY(), -m_controller.getRightX(),true);
+    m_myRobot.curvatureDrive(-m_controller.getLeftY(), -m_controller.getRightX(),true);
   }
 
   /** This function is called once each time the robot enters test mode. */
