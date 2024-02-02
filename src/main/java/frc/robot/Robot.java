@@ -6,6 +6,7 @@ package frc.robot;
 
 import com.revrobotics.CANSparkLowLevel;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.util.sendable.SendableRegistry;
@@ -94,8 +95,32 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    m_myRobot.curvatureDrive(-m_controller.getLeftY(), -m_controller.getRightX(),true);
+    if(m_controller.getRightBumper())
+    {
+        m_myRobot.curvatureDrive(-m_controller.getLeftY(), -m_controller.getRightX()*0.3,true);
+    }
+    else
+    {
+        m_myRobot.curvatureDrive(-m_controller.getLeftY()*0.5, -m_controller.getRightX()*0.3,true);
+    }
+    if(m_controller.getLeftBumper())
+    {
+      m_leftMotor.setIdleMode(IdleMode.kBrake);
+      m_rightMotor.setIdleMode(IdleMode.kBrake);
+      m_leftMotor2.setIdleMode(IdleMode.kBrake);
+      m_rightMotor2.setIdleMode(IdleMode.kBrake);
+
+    }
+    else
+    {
+      m_leftMotor.setIdleMode(IdleMode.kCoast);
+      m_rightMotor.setIdleMode(IdleMode.kCoast);
+      m_leftMotor2.setIdleMode(IdleMode.kCoast);
+      m_rightMotor2.setIdleMode(IdleMode.kCoast);
+
+    }
   }
+
 
   /** This function is called once each time the robot enters test mode. */
   @Override
