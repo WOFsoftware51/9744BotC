@@ -4,17 +4,14 @@
 
 package frc.robot;
 
-import com.revrobotics.CANSparkLowLevel;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
-import edu.wpi.first.util.sendable.SendableRegistry;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 
 
 /**
@@ -25,12 +22,18 @@ import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
  */
 public class Robot extends TimedRobot {
   
-  private final XboxController m_controller = new XboxController(0);
+  private final XboxController driver = new XboxController(0);
+  private final XboxController operator = new XboxController(1);
   private final Timer m_timer = new Timer();
   private CANSparkMax m_leftMotor;
   private CANSparkMax m_rightMotor;
   private CANSparkMax m_leftMotor2;
   private CANSparkMax m_rightMotor2;
+  private CANSparkMax m_shooter1;
+  private CANSparkMax m_shooter2;
+  private CANSparkMax m_shooter3;
+  private CANSparkMax m_floorIntake;
+  private CANSparkMax m_hanger;
   private DifferentialDrive m_myRobot;
 
 
@@ -51,20 +54,22 @@ public class Robot extends TimedRobot {
     m_rightMotor = new CANSparkMax(3, MotorType.kBrushed);
     m_leftMotor2 = new CANSparkMax(2, MotorType.kBrushed);
     m_rightMotor2 = new CANSparkMax(4, MotorType.kBrushed);
-
+    m_shooter1 = new CANSparkMax(5, MotorType.kBrushed);
+    m_shooter2 = new CANSparkMax(6, MotorType.kBrushed);
+    m_shooter3 = new CANSparkMax(7, MotorType.kBrushed);
+    m_floorIntake = new CANSparkMax(8, MotorType.kBrushed);
+    m_hanger = new CANSparkMax(9, MotorType.kBrushed);
 
     m_leftMotor.restoreFactoryDefaults();
     m_rightMotor.restoreFactoryDefaults();
     m_leftMotor2.restoreFactoryDefaults();
     m_rightMotor2.restoreFactoryDefaults();
 
-
    // m_rightMotor.setInverted(true);
     m_leftMotor.setInverted(true);
     m_leftMotor2.follow(m_leftMotor);
     m_rightMotor2.follow(m_rightMotor);
 
-    
     m_myRobot = new DifferentialDrive(m_leftMotor, m_rightMotor);
 
 
@@ -79,13 +84,27 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    // Drive for 2 seconds
-    if (m_timer.get() < 2.0) {
-      // Drive forwards half speed, make sure to turn input squaring off
-      m_myRobot.arcadeDrive(0.5, 0.0, false);
-    } else {
-      m_myRobot.stopMotor(); // stop robot
+    if(m_timer.get() > 0.5) { //Charges up
+      m_shooter3.set(1.0);
+      // m_shooter2.set(1.0); //TODO maybe?
     }
+
+    if(m_timer.get() > 1.5) { //Shoots
+      m_shooter1.set(1.0);
+      m_shooter2.set(1.0);
+    }
+
+    if(m_timer.get() > 4){
+      m_myRobot.curvatureDrive(0.3, 0,true);
+    }
+
+    if(m_timer.get() > 10){
+      m_myRobot.curvatureDrive(0, 0,true);
+      m_shooter1.set(0.0);
+      m_shooter2.set(0.0);
+      m_shooter3.set(0.0);
+    }
+
   }
 
   /** This function is called once each time the robot enters teleoperated mode. */
@@ -95,31 +114,76 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during teleoperated mode. */
   @Override
   public void teleopPeriodic() {
-    if(m_controller.getRightBumper())
-    {
-        m_myRobot.curvatureDrive(-m_controller.getLeftY(), -m_controller.getRightX()*0.3,true);
+    //Boost
+    if(driver.getRightBumper()) {
+        m_myRobot.curvatureDrive(-driver.getLeftY(), -driver.getRightX()*0.3,true);
     }
-    else
-    {
-        m_myRobot.curvatureDrive(-m_controller.getLeftY()*0.5, -m_controller.getRightX()*0.3,true);
+    else {
+        m_myRobot.curvatureDrive(-driver.getLeftY()*0.5, -driver.getRightX()*0.3,true);
     }
-    if(m_controller.getLeftBumper())
-    {
+
+
+    //Brake
+    if(driver.getLeftTriggerAxis()>0.8) {
       m_leftMotor.setIdleMode(IdleMode.kBrake);
       m_rightMotor.setIdleMode(IdleMode.kBrake);
       m_leftMotor2.setIdleMode(IdleMode.kBrake);
       m_rightMotor2.setIdleMode(IdleMode.kBrake);
-
     }
-    else
-    {
+    else {
       m_leftMotor.setIdleMode(IdleMode.kCoast);
       m_rightMotor.setIdleMode(IdleMode.kCoast);
       m_leftMotor2.setIdleMode(IdleMode.kCoast);
       m_rightMotor2.setIdleMode(IdleMode.kCoast);
-
     }
+    
+
+    //Speaker Shooter
+    if(operator.getRightTriggerAxis()>0.8) { //Shoot
+      m_shooter2.set(-1.0);
+    }
+    else {
+      m_shooter2.set(0.0);
+    }
+
+    
+    //Floor intake
+    if(operator.getRightBumper()) { //Intake
+      m_floorIntake.set(-0.8);
+      m_shooter1.set(-0.8);
+    }
+    else if(operator.getLeftBumper()){ //Spit
+      m_floorIntake.set(0.8);
+      m_shooter1.set(0.8);
+    }
+    else {
+      m_floorIntake.set(0.0);
+      m_shooter1.set(0.0);
+    }
+    
+      
+
+    //Hanger TODO
+    if(operator.getXButton()){
+      m_hanger.set(0.5); //TEST
+    }
+    else if(operator.getYButton()){
+      m_hanger.set(-0.5);
+    }
+    else{
+      m_hanger.set(0.0);
+    }
+
+
+    if(operator.getAButton()){ //Charge
+      m_shooter3.set(-1.0);
+    }
+    else{
+      m_shooter3.set(0.0);
+    }
+
   }
+
 
 
   /** This function is called once each time the robot enters test mode. */
