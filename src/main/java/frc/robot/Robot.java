@@ -76,6 +76,8 @@ public class Robot extends TimedRobot {
     m_rightMotor2.follow(m_rightMotor);
 
     m_myRobot = new DifferentialDrive(m_leftMotor, m_rightMotor);
+
+    
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
