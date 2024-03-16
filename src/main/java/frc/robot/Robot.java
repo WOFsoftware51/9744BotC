@@ -10,10 +10,12 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 
 /**
@@ -38,6 +40,9 @@ public class Robot extends TimedRobot {
   private CANSparkMax m_floorIntake;
   private CANSparkMax m_hanger;
   private DifferentialDrive m_myRobot;
+  private DigitalInput m_sensor;
+  private boolean isShooting;
+
 
 
   public Robot() {
@@ -63,6 +68,7 @@ public class Robot extends TimedRobot {
     m_shooter4 = new CANSparkMax(10, MotorType.kBrushed);
     m_floorIntake = new CANSparkMax(8, MotorType.kBrushed);
     m_hanger = new CANSparkMax(9, MotorType.kBrushed);
+    m_sensor = new DigitalInput(0);
 
     // m_leftMotor.restoreFactoryDefaults();
     m_rightMotor.restoreFactoryDefaults();
@@ -77,7 +83,11 @@ public class Robot extends TimedRobot {
 
     m_myRobot = new DifferentialDrive(m_leftMotor, m_rightMotor);
 
-    
+    m_hanger.setIdleMode(IdleMode.kBrake);
+    m_shooter1.setIdleMode(IdleMode.kBrake);
+
+   isShooting = false;
+
   }
 
   /** This function is run once each time the robot enters autonomous mode. */
@@ -144,19 +154,30 @@ public class Robot extends TimedRobot {
     }
     
 
-    //Speaker Shooter
-    if(operator.getRightTriggerAxis()>0.8) { //Shoot
-      m_shooter2.set(-1.0);
-    }
-    else {
-      m_shooter2.set(0.0);
-    }
+    // //Speaker Shooter
+    // if(operator.getRightTriggerAxis()>0.8) { //Shoot
+    //   m_shooter2.set(-1.0);
+    // }
+    // else {
+    //   m_shooter2.set(0.0);
+    // }
 
     
     //Floor intake
     if(operator.getRightBumper()) { //Intake
-      m_floorIntake.set(-0.8);
-      m_shooter1.set(-0.8);
+      if(getSensorVal() == 1 && isShooting==false){
+        m_floorIntake.set(0.0);
+        m_shooter1.set(0.0);
+      }
+      else if(isShooting==true){
+        m_floorIntake.set(-1.0);
+        m_shooter1.set(-1.0);
+      }
+      else{
+        m_floorIntake.set(-0.8);
+        m_shooter1.set(-0.4);
+      }
+
     }
     else if(operator.getLeftBumper()){ //Spit
       m_floorIntake.set(0.8);
@@ -181,17 +202,30 @@ public class Robot extends TimedRobot {
     }
 
     //Charge
-    if(operator.getAButton()){ 
+    if(operator.getRightTriggerAxis()>0.8){ 
+      m_shooter2.set(-1.0);
       m_shooter3.set(-1.0);
-      m_shooter4.set(1.0);
+      m_shooter4.set(-1.0);
+      isShooting = true;
     }
     else{
+      m_shooter2.set(0.0);
       m_shooter3.set(0.0);
       m_shooter4.set(0.0);
-  
+      isShooting = false;
+      
+      SmartDashboard.putNumber("Sensor", getSensorVal());
     }
   }
 
+  public int getSensorVal(){
+    if(m_sensor.get()) {
+        return 1;
+    }
+    else{
+        return -1;
+    }
+    }
 
 
   /** This function is called once each time the robot enters test mode. */
