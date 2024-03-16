@@ -174,8 +174,8 @@ public class Robot extends TimedRobot {
       m_hanger.set(0.0);
     }
 
-
-    if(operator.getAButton()){ //Charge
+    //Charge
+    if(operator.getAButton()){ 
       m_shooter3.set(-1.0);
     }
     else{
